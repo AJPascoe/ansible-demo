@@ -1,0 +1,122 @@
+# - name: install stuff on vm's 
+#   hosts: all
+#   tasks:
+#     - name: install wget on both machinnes
+#       become: yes
+#       package:
+#         name: wget
+#         state: present
+#     - name: install unzip host-a
+#       become: yes
+#       package:
+#         name: unzip
+#         state: present
+#       when: ansible_host == "54.75.87.185"
+#     - name: install nginx host-b
+#       become: yes
+#       package:
+#         name: nginx
+#         state: present
+#       when: ansible_host == "52.214.70.157"
+
+
+- name: install stuff on vm's
+  hosts: virtualmachines
+  tasks:
+    - name: install wget on both machines
+      become: yes
+      package:
+        name: wget
+        state: present
+    - name: install  unzip host-a
+      become: yes
+      package:
+        name: unzip
+        state: present
+      when: ansible_host == '54.75.87.185'   
+    - name: install nginx host-b
+      become: yes 
+      package:
+        name: nginx
+        state: present
+      when: ansible_host == '52.214.70.157'
+    - name: Remove unzip on all virtual machines
+      become: yes
+      apt:
+        name: unzip
+        state: absent 
+
+# task 2
+- name: setup vm01
+  hosts: vm01
+  become: yes
+  tasks:
+    - name: Install nginx on vm01
+      package:
+        name: nginx
+        state: present
+        update_cache: true
+      register: nginx_install
+
+    - name: Change default nginx file on vm01
+      copy:
+        src: /var/www/html/index.nginx-debian.html
+        dest: /var/www/html/index.nginx-debian.html
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Print out nginx install JSON object
+      debug:
+        var: nginx_install
+
+    - name: Install prerequisites for Docker repo
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+
+    - name: Install Docker CE
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        update_cache: yes
+
+    - name: Install prerequisites for docker-compose
+      apt:
+        name:
+          - python3-pip
+          - python3-setuptools
+          - virtualenv
+
+    - name: Install docker-compose
+      pip:
+        name: docker-compose
+
+    - name: Ensure Docker is started
+      service:
+        name: docker
+        state: started
+
+- name: setup vm02
+  hosts: vm02
+  become: yes
+  tasks:
+    - name: Install Docker on vm02
+      shell: curl https://get.docker.com | sudo bash
