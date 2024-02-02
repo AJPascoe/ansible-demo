@@ -1,0 +1,23 @@
+---
+# tasks file for new-role
+
+- name: create 'devs' group
+  group:
+    name: 'devs'
+    state: present
+
+- name: add user to 'devs' group
+  user:
+    name: adam
+    group: devs
+    state: present
+
+- name: install zsh shell
+  package:
+    name: zsh
+    state: present
+
+- name: install curl
+  package:
+    name: curl
+    state: present
